@@ -2,6 +2,7 @@ const messages = {
   en: {
     notFound: 'not found',
     unauthorized: 'unauthorized',
+    closed: 'Connection closed:',
     connected: 'WhatsApp connected',
     notOnWhatsApp: 'not on WhatsApp',
     notConnected: 'WhatsApp not connected',
@@ -9,6 +10,7 @@ const messages = {
   },
   'pt-BR': {
     notFound: 'não encontrado',
+    closed: 'Conexão fechada:',
     unauthorized: 'não autorizado',
     connected: 'WhatsApp conectado',
     notOnWhatsApp: 'não está no WhatsApp',
@@ -17,7 +19,5 @@ const messages = {
   }
 };
 
-type Locale = keyof typeof messages;
-
 export const t = (key: keyof typeof messages.en, locale = process.env.LOCALE ?? 'en'): string =>
-  (messages[locale as Locale] ?? messages.en)[key];
+  (messages[locale as keyof typeof messages] ?? messages.en)[key];
