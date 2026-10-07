@@ -1,4 +1,4 @@
-# wpp-inviter
+# wpp-sender
 
 Batch WhatsApp messaging over HTTP. [Baileys](https://github.com/WhiskeySockets/Baileys) talks to WhatsApp
 Web, [Fastify](https://fastify.dev) exposes the API.

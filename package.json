@@ -1,7 +1,7 @@
 {
   "type": "module",
   "version": "1.0.0",
-  "name": "wpp-inviter",
+  "name": "wpp-sender",
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc",
