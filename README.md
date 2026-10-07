@@ -12,7 +12,8 @@ Web, [Fastify](https://fastify.dev) exposes the API.
 
 ```bash
 npm install
-API_KEY=change-me npm start   # scan the QR code printed in the terminal
+cp .env.example .env         # then set API_KEY to any long secret
+npm start                    # scan the QR code printed in the terminal
 ```
 
 The session is saved in `auth/`. If WhatsApp logs the device out, the folder is cleared and a new QR code is printed.
