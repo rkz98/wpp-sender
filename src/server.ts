@@ -3,7 +3,8 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import pino from 'pino';
 import { connect, wa } from './wa.ts';
 import { t } from './i18n.ts';
-import type { BatchBody, Job, Sender } from './models/batch.ts';
+import type { BatchBody, Job } from './models/batch.ts';
+import type { Sender } from './models/sender.ts';
 
 const app = Fastify({ logger: true });
 const jobs = new Map<string, Job>();
@@ -12,7 +13,7 @@ const rand = (min: number, max: number) => min + Math.random() * (max - min);
 const locale = (req: FastifyRequest) => req.headers['accept-language']?.split(',')[0];
 let queue = Promise.resolve(); // ponytail: one job at a time so delays stay honest; jobs die on restart
 
-export async function run(job: Job, sock: Sender, lang?: string): Promise<void> {
+export const run = async (job: Job, sock: Sender, lang?: string): Promise<void> => {
   job.status = 'running';
   for (const contact of job.contacts) {
     try {
@@ -29,7 +30,7 @@ export async function run(job: Job, sock: Sender, lang?: string): Promise<void> 
     await sleep(rand(job.delayMs[0], job.delayMs[1]));
   }
   job.status = 'done';
-}
+};
 
 const schema = {
   body: {
@@ -80,7 +81,7 @@ app.get<{ Params: { id: string } }>('/batch/:id', async (req, reply) =>
 
 app.get('/status', async () => ({ user: wa()?.user ?? null, connected: Boolean(wa()?.user) }));
 
-if (process.argv[1]?.endsWith('server.ts')) {
+if (import.meta.main) {
   if (!process.env.API_KEY) throw new Error('API_KEY not configured');
   await connect();
   await app.listen({ host: '0.0.0.0', port: Number(process.env.PORT) || 3000 });

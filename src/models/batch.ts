@@ -1,9 +1,4 @@
-import type { WASocket } from 'baileys';
-
-export interface Contact {
-  name?: string;
-  number: string;
-}
+import type { Contact } from './contact.ts';
 
 export interface BatchBody {
   message: string;
@@ -17,5 +12,3 @@ export interface Job extends BatchBody {
   status: 'done' | 'queued' | 'running';
   failed: (Contact & { error: string })[];
 }
-
-export type Sender = Pick<WASocket, 'onWhatsApp' | 'sendMessage'>;

@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync, rmSync } from 'node:fs';
 import { run } from './src/server.ts';
 import { t } from './src/i18n.ts';
-import type { Job, Sender } from './src/models/batch.ts';
+import type { Job } from './src/models/batch.ts';
+import type { Sender } from './src/models/sender.ts';
 
 const sent: [string, string][] = [];
 const sock = {
