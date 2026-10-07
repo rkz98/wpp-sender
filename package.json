@@ -1,0 +1,30 @@
+{
+  "name": "wpp-inviter",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.ts",
+    "start": "node src/server.ts",
+    "typecheck": "tsc",
+    "lint": "eslint ."
+  },
+  "keywords": [],
+  "type": "module",
+  "dependencies": {
+    "baileys": "^7.0.0-rc14",
+    "fastify": "^5.12.5",
+    "i18n-js": "^4.5.4",
+    "pino": "^10.4.0",
+    "qrcode-terminal": "^0.12.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@types/node": "^26.6.4",
+    "@types/qrcode-terminal": "^0.12.2",
+    "eslint": "^9.39.5",
+    "eslint-plugin-perfectionist": "^5.12.1",
+    "typescript": "~5.8",
+    "typescript-eslint": "^8.71.1"
+  }
+}
