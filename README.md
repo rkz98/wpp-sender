@@ -41,7 +41,7 @@ curl -X POST localhost:3000/batch -H 'x-api-key: change-me' -H 'content-type: ap
 |------------|---------------------------------------|----------------------------------------------------------------------------|
 | `contacts` | `{ name?: string, number: string }[]` | 1 to 500. Any number formatting; non-digits are stripped                   |
 | `message`  | `string`                              | Text to send. `{name}` is replaced by the contact's name (empty if absent) |
-| `delayMs`  | `[number, number]`                    | Min/max delay between sends. Default `[15000, 30000]`                        |
+| `delayMs`  | `[number, number]`                    | Min/max delay between sends. Default `[15000, 30000]`                      |
 
 Response `202`: `{ "id": "<uuid>", "total": 2 }`
 
