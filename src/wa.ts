@@ -1,9 +1,4 @@
-import makeWASocket, {
-  DisconnectReason,
-  fetchLatestWaWebVersion,
-  useMultiFileAuthState,
-  type WASocket
-} from 'baileys';
+import makeWASocket, { DisconnectReason, fetchLatestWaWebVersion, useMultiFileAuthState, type WASocket } from 'baileys';
 import { rmSync } from 'node:fs';
 import qrcode from 'qrcode-terminal';
 import pino from 'pino';

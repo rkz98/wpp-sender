@@ -6,20 +6,41 @@
   "auth": {
     "type": "apikey",
     "apikey": [
-      { "key": "key", "value": "x-api-key" },
-      { "key": "value", "value": "{{apiKey}}" },
-      { "key": "in", "value": "header" }
+      {
+        "key": "key",
+        "value": "x-api-key"
+      },
+      {
+        "key": "value",
+        "value": "{{apiKey}}"
+      },
+      {
+        "key": "in",
+        "value": "header"
+      }
     ]
   },
   "variable": [
-    { "key": "baseUrl", "value": "http://localhost:3000" },
-    { "key": "apiKey", "value": "" },
-    { "key": "jobId", "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "apiKey",
+      "value": ""
+    },
+    {
+      "key": "jobId",
+      "value": ""
+    }
   ],
   "item": [
     {
       "name": "Status",
-      "request": { "method": "GET", "url": "{{baseUrl}}/status" }
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/status"
+      }
     },
     {
       "name": "Create batch",
@@ -28,14 +49,21 @@
           "listen": "test",
           "script": {
             "type": "text/javascript",
-            "exec": ["pm.collectionVariables.set('jobId', pm.response.json().id);"]
+            "exec": [
+              "pm.collectionVariables.set('jobId', pm.response.json().id);"
+            ]
           }
         }
       ],
       "request": {
         "method": "POST",
         "url": "{{baseUrl}}/batch",
-        "header": [{ "key": "content-type", "value": "application/json" }],
+        "header": [
+          {
+            "key": "content-type",
+            "value": "application/json"
+          }
+        ],
         "body": {
           "mode": "raw",
           "raw": "{\n  \"contacts\": [\n    { \"name\": \"Ana\", \"number\": \"+55 11 99999-0001\" },\n    { \"number\": \"5511999990002\" }\n  ],\n  \"message\": \"Oi {name}!\",\n  \"delayMs\": [3000, 8000]\n}"
@@ -44,11 +72,17 @@
     },
     {
       "name": "Get batch",
-      "request": { "method": "GET", "url": "{{baseUrl}}/batch/{{jobId}}" }
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/batch/{{jobId}}"
+      }
     },
     {
       "name": "List batches",
-      "request": { "method": "GET", "url": "{{baseUrl}}/batch" }
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/batch"
+      }
     }
   ]
 }

@@ -5,6 +5,7 @@ import { connect, wa } from './wa.ts';
 import { t } from './i18n.ts';
 import type { BatchBody, Job } from './models/batch.ts';
 import type { Sender } from './models/sender.ts';
+import schema from './schema.ts';
 
 const app = Fastify({ logger: true });
 const jobs = new Map<string, Job>();
@@ -30,33 +31,6 @@ export const run = async (job: Job, sock: Sender, lang?: string): Promise<void> 
     await sleep(rand(job.delayMs[0], job.delayMs[1]));
   }
   job.status = 'done';
-};
-
-const schema = {
-  body: {
-    type: 'object',
-    required: ['contacts', 'message'],
-    properties: {
-      message: { minLength: 1, type: 'string' },
-      delayMs: {
-        minItems: 2,
-        maxItems: 2,
-        type: 'array',
-        default: [3000, 8000],
-        items: { minimum: 0, type: 'integer' }
-      },
-      contacts: {
-        minItems: 1,
-        type: 'array',
-        maxItems: 500,
-        items: {
-          type: 'object',
-          required: ['number'],
-          properties: { name: { type: 'string' }, number: { minLength: 8, type: 'string' } }
-        }
-      }
-    }
-  }
 };
 
 app.addHook('onRequest', async (req, reply) => {
