@@ -22,5 +22,14 @@
     "eslint-plugin-perfectionist": "^5.12.1",
     "typescript": "~5.8",
     "typescript-eslint": "^8.71.1"
+  },
+  "description": "Self-hosted HTTP API for sending WhatsApp messages in batches, built on Baileys and Fastify",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rkz98/wpp-sender.git"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

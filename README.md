@@ -1,122 +1,193 @@
-# wpp-sender
+<h1 align="center">wpp-sender</h1>
 
-Batch WhatsApp messaging over HTTP. [Baileys](https://github.com/WhiskeySockets/Baileys) talks to WhatsApp
-Web, [Fastify](https://fastify.dev) exposes the API.
+<p align="center">
+  Self-hosted HTTP API for sending WhatsApp messages in batches.<br>
+  No Meta Business account, no third-party gateway, no build step.
+</p>
 
-## Requirements
+<p align="center">
+  <a href="https://nodejs.org"><img alt="Node.js 24+" src="https://img.shields.io/badge/node-%3E%3D24-339933?logo=node.js&logoColor=white"></a>
+  <a href="https://www.typescriptlang.org"><img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white"></a>
+  <a href="https://fastify.dev"><img alt="Fastify" src="https://img.shields.io/badge/Fastify-5-000000?logo=fastify&logoColor=white"></a>
+  <a href="https://github.com/WhiskeySockets/Baileys"><img alt="Baileys" src="https://img.shields.io/badge/Baileys-7-25D366?logo=whatsapp&logoColor=white"></a>
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-blue"></a>
+</p>
 
-- Node 24+ (runs `.ts` directly, no build step)
-- A phone with WhatsApp to scan the QR code
+---
 
-## Run
+**wpp-sender** wraps [Baileys](https://github.com/WhiskeySockets/Baileys) (a WhatsApp Web client) in a tiny
+[Fastify](https://fastify.dev) server. You scan a QR code once, then `POST` a list of contacts and a message.
+The server queues the batch, sends one message at a time with a random human-like delay, and lets you poll the result.
+
+## Features
+
+- **One endpoint to send** — `POST /batch` with contacts, a message and an optional delay range.
+- **Per-contact templating** — `{name}` in the message is replaced by each contact's name.
+- **Number validation** — every number is checked with WhatsApp before sending; invalid ones land in `failed`.
+- **Rate-limited by design** — messages go out sequentially with a random delay between them.
+- **Job status** — poll `GET /batch/:id` for `queued` / `running` / `done`, plus `sent` and `failed` lists.
+- **Persistent session** — credentials are stored in `auth/`; restarts reconnect without a new QR code.
+- **Audit log** — one JSON line per contact in `sends.log`, ready for `jq` or your log shipper.
+- **i18n** — logs and error messages in `en` or `pt-BR`, overridable per request via `Accept-Language`.
+- **Zero build** — runs TypeScript directly on Node 24. Four runtime dependencies.
+
+## Quick start
+
+> Requires **Node.js 24+** and a phone with WhatsApp.
 
 ```bash
+git clone https://github.com/rkz98/wpp-sender.git
+cd wpp-sender
 npm install
-cp .env.example .env         # then set API_KEY to any long secret
-npm start                    # scan the QR code printed in the terminal
+cp .env.example .env   # set API_KEY to any long random string
+npm start              # scan the QR code printed in the terminal
 ```
 
-The session is saved in `auth/`. If WhatsApp logs the device out, the folder is cleared and a new QR code is printed.
+Once the terminal prints `WhatsApp connected`, send your first batch:
 
-## API
+```bash
+curl -X POST localhost:3000/batch \
+  -H 'x-api-key: <your API_KEY>' \
+  -H 'content-type: application/json' \
+  -d '{
+    "contacts": [
+      { "name": "Ana", "number": "+55 11 99999-0001" },
+      { "number": "5511999990002" }
+    ],
+    "message": "Hello {name}!"
+  }'
+# → 202 { "id": "6f1c…", "total": 2 }
+```
 
-Every request needs the `x-api-key` header matching `API_KEY`. Missing or wrong key → `401`.
+Then check progress:
 
-Postman: import `postman_collection.json`, then set the `apiKey` collection variable to the value in your `.env`.
-"Create batch" saves the returned id into `jobId`, so "Get batch" works right after.
+```bash
+curl localhost:3000/batch/6f1c… -H 'x-api-key: <your API_KEY>'
+```
+
+### Postman
+
+Import [`postman_collection.json`](postman_collection.json) and set the `apiKey` collection variable.
+**Create batch** stores the returned id in `jobId`, so **Get batch** works right away.
+
+## API reference
+
+All routes require the `x-api-key` header. A missing or wrong key returns `401`.
+
+| Method | Path         | Description                                  |
+|--------|--------------|----------------------------------------------|
+| `POST` | `/batch`     | Queue a batch. Returns `202` with the job id |
+| `GET`  | `/batch`     | List every job held in memory                |
+| `GET`  | `/batch/:id` | Get one job. `404` if unknown                |
+| `GET`  | `/status`    | WhatsApp connection state                    |
 
 ### `POST /batch`
 
-Queues a batch and returns immediately. Jobs run one at a time, in order, with a random delay between each message.
+Request body:
 
-```bash
-curl -X POST localhost:3000/batch -H 'x-api-key: change-me' -H 'content-type: application/json' -d '{
-  "contacts": [{ "name": "Ana", "number": "+55 11 99999-0001" }, { "number": "5511999990002" }],
-  "message": "Hello {name}!",
-  "delayMs": [15000, 30000]
-}'
-```
+| Field      | Type                                  | Required | Notes                                                                |
+|------------|---------------------------------------|----------|----------------------------------------------------------------------|
+| `contacts` | `{ name?: string, number: string }[]` | yes      | 1–500 items. Any formatting is accepted; non-digits are stripped     |
+| `message`  | `string`                              | yes      | `{name}` is replaced per contact (empty string when `name` is absent) |
+| `delayMs`  | `[number, number]`                    | no       | Min/max delay between sends in ms. Default `[15000, 30000]`          |
 
-| Field      | Type                                  | Notes                                                                      |
-|------------|---------------------------------------|----------------------------------------------------------------------------|
-| `contacts` | `{ name?: string, number: string }[]` | 1 to 500. Any number formatting; non-digits are stripped                   |
-| `message`  | `string`                              | Text to send. `{name}` is replaced by the contact's name (empty if absent) |
-| `delayMs`  | `[number, number]`                    | Min/max delay between sends. Default `[15000, 30000]`                      |
+Responses:
 
-Response `202`: `{ "id": "<uuid>", "total": 2 }`
+- `202` — `{ "id": "<uuid>", "total": <contacts.length> }`. The batch runs in the background.
+- `400` — body failed validation.
+- `503` — WhatsApp is not connected yet.
 
-### `GET /batch`
-
-All jobs, in memory, as in `GET /batch/:id`.
+Batches run **one at a time, in submission order**. A second `POST` while one is running is queued behind it.
 
 ### `GET /batch/:id`
 
-`status` is `queued`, `running` or `done`.
-
 ```json
 {
-  "id": "…",
+  "id": "6f1c…",
   "status": "running",
-  "sent": [
-    {
-      "name": "Ana",
-      "number": "+55 11 99999-0001"
-    }
-  ],
-  "failed": [
-    {
-      "number": "5511999990002",
-      "error": "not on WhatsApp"
-    }
-  ]
+  "message": "Hello {name}!",
+  "delayMs": [15000, 30000],
+  "contacts": [ … ],
+  "sent":   [ { "name": "Ana", "number": "+55 11 99999-0001" } ],
+  "failed": [ { "number": "5511999990002", "error": "not on WhatsApp" } ]
 }
 ```
+
+`status` is one of `queued`, `running`, `done`.
 
 ### `GET /status`
 
-`{ "connected": true, "user": { … } }`
+```json
+{ "connected": true, "user": { "id": "5511999990000:12@s.whatsapp.net", "name": "…" } }
+```
 
-## Config
+## Configuration
 
-| Env        | Default     | Notes                                                 |
-|------------|-------------|-------------------------------------------------------|
-| `API_KEY`  | required    | Value clients must send in the `x-api-key` header     |
-| `PORT`     | `3000`      |                                                       |
-| `LOCALE`   | `en`        | Language for logs and errors. `en` or `pt-BR`         |
-| `LOG_FILE` | `sends.log` | One JSON line per contact: `sent` or `failed` + error |
+Set via `.env` (loaded with Node's built-in `--env-file`) or the environment.
 
-API error messages also honor the `Accept-Language` header per request.
+| Variable   | Default     | Description                                                   |
+|------------|-------------|---------------------------------------------------------------|
+| `API_KEY`  | *required*  | Secret that clients must send in the `x-api-key` header       |
+| `PORT`     | `3000`      | HTTP port                                                     |
+| `LOCALE`   | `en`        | Language for console output and API errors. `en` or `pt-BR`   |
+| `LOG_FILE` | `sends.log` | Path of the per-contact audit log                             |
 
-Example `sends.log` lines:
+API error messages also honor the request's `Accept-Language` header, which takes precedence over `LOCALE`.
+
+### Audit log
+
+Every contact produces one JSON line in `LOG_FILE`:
 
 ```json
-{
-  "level": 30,
-  "time": 1760000000000,
-  "job": "…",
-  "name": "Ana",
-  "number": "+55 11 99999-0001",
-  "msg": "sent"
-}
-{
-  "level": 40,
-  "time": 1760000003000,
-  "job": "…",
-  "number": "5511999990002",
-  "error": "not on WhatsApp",
-  "msg": "failed"
-}
+{"level":30,"time":1760000000000,"job":"6f1c…","name":"Ana","number":"+55 11 99999-0001","msg":"sent"}
+{"level":40,"time":1760000003000,"job":"6f1c…","number":"5511999990002","error":"not on WhatsApp","msg":"failed"}
 ```
 
-## Scripts
+### Session
+
+WhatsApp credentials live in `auth/` (git-ignored). If WhatsApp logs the device out, the folder is wiped and a
+fresh QR code is printed. Delete `auth/` yourself to force a new login.
+
+## Development
 
 ```bash
-npm test             # self-check of the send loop with a fake socket
-npm run lint         # eslint
-npm run typecheck    # tsc --noEmit
+npm test            # self-check of the send loop against a fake socket
+npm run lint        # eslint
+npm run typecheck   # tsc --noEmit
 ```
 
-## Notes
+Project layout:
 
-- Jobs live in memory. A restart drops running batches.
-- Keep delays generous. WhatsApp bans numbers that blast messages.
+```
+src/
+├── server.ts      # Fastify app, routes, job queue
+├── wa.ts          # Baileys connection, QR code, reconnect
+├── schema.ts      # JSON schema for POST /batch
+├── i18n.ts        # en / pt-BR messages
+└── models/        # Contact, Job, Sender types
+test.ts            # runnable assertions, no framework
+```
+
+## Limitations
+
+- **Jobs live in memory.** Restarting the server drops queued and running batches. The audit log survives.
+- **Single WhatsApp account.** One server process equals one phone.
+- **Text only.** No media, buttons or groups yet.
+
+## Disclaimer
+
+This project uses an unofficial WhatsApp Web client. It is **not affiliated with or endorsed by WhatsApp or Meta**.
+Sending unsolicited or high-volume messages violates WhatsApp's Terms of Service and **can get your number banned**.
+Keep the delays generous, message only people who opted in, and use it at your own risk.
+
+## Contributing
+
+Issues and pull requests are welcome. Before opening a PR, run:
+
+```bash
+npm run lint && npm run typecheck && npm test
+```
+
+## License
+
+[MIT](LICENSE) © Kauê
