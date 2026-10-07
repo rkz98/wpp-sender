@@ -66,7 +66,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"contacts\": [\n    { \"name\": \"Ana\", \"number\": \"+55 11 99999-0001\" },\n    { \"number\": \"5511999990002\" }\n  ],\n  \"message\": \"Oi {name}!\",\n  \"delayMs\": [3000, 8000]\n}"
+          "raw": "{\n  \"contacts\": [\n    { \"name\": \"Ana\", \"number\": \"+55 11 99999-0001\" },\n    { \"number\": \"5511999990002\" }\n  ],\n  \"message\": \"Oi {name}!\",\n  \"delayMs\": [15000, 30000]\n}"
         }
       }
     },

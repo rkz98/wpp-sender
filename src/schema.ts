@@ -8,7 +8,7 @@ const schema = {
         minItems: 2,
         maxItems: 2,
         type: 'array',
-        default: [3000, 8000],
+        default: [15000, 30000],
         items: { minimum: 0, type: 'integer' }
       },
       contacts: {
