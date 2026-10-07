@@ -4,7 +4,7 @@ import qrcode from 'qrcode-terminal';
 import pino from 'pino';
 import { t } from './i18n.ts';
 
-let sock: WASocket | undefined;
+let sock: WASocket;
 const logger = pino({ level: 'silent' });
 
 export const connect = async (): Promise<WASocket> => {
@@ -31,4 +31,4 @@ export const connect = async (): Promise<WASocket> => {
   return sock;
 };
 
-export const wa = (): WASocket | undefined => sock;
+export const wa = (): WASocket => sock;
