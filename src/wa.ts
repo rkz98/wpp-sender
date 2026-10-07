@@ -14,7 +14,7 @@ export const connect = async (): Promise<WASocket> => {
   sock.ev.on('creds.update', saveCreds);
   sock.ev.on('connection.update', ({ qr, connection, lastDisconnect }) => {
     if (qr) {
-      console.clear(); // ponytail: QR rotates every ~20s; clearing keeps a stale one off screen
+      console.clear(); // ponytail: QR rotates every ~20s; clearing keeps a stale one off-screen
       qrcode.generate(qr, { small: true });
     }
     if (connection === 'open') console.log(t('connected'));
