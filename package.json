@@ -1,16 +1,13 @@
 {
-  "name": "wpp-inviter",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "node test.ts",
-    "start": "node src/server.ts",
-    "typecheck": "tsc",
-    "lint": "eslint ."
-  },
-  "keywords": [],
   "type": "module",
+  "version": "1.0.0",
+  "name": "wpp-inviter",
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc",
+    "start": "node src/server.ts",
+    "test": "LOG_FILE=test-sends.log node test.ts"
+  },
   "dependencies": {
     "baileys": "^7.0.0-rc14",
     "fastify": "^5.12.5",

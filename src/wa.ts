@@ -4,6 +4,7 @@ import makeWASocket, {
   useMultiFileAuthState,
   type WASocket
 } from 'baileys';
+import { rmSync } from 'node:fs';
 import qrcode from 'qrcode-terminal';
 import pino from 'pino';
 import { t } from './i18n.ts';
@@ -21,8 +22,11 @@ export async function connect(): Promise<WASocket> {
     if (connection === 'open') console.log(t('connected'));
     if (connection === 'close') {
       const code = (lastDisconnect?.error as undefined | { output?: { statusCode?: number } })?.output?.statusCode;
-      if (code === DisconnectReason.loggedOut) console.error(t('loggedOut'));
-      else connect();
+      if (code === DisconnectReason.loggedOut) {
+        console.error(t('loggedOut'));
+        rmSync('auth', { force: true, recursive: true });
+      }
+      connect().catch(console.error);
     }
   });
   return sock;
