@@ -22,6 +22,8 @@ The session is saved in `auth/`. If WhatsApp logs the device out, the folder is 
 
 Every request needs the `x-api-key` header matching `API_KEY`. Missing or wrong key → `401`.
 
+Postman: import `postman_collection.json`, then set the `apiKey` collection variable to the value in your `.env`. "Create batch" saves the returned id into `jobId`, so "Get batch" works right after.
+
 ### `POST /batch`
 
 Queues a batch and returns immediately. Jobs run one at a time, in order, with a random delay between each message.
