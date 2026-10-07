@@ -4,8 +4,8 @@ import qrcode from 'qrcode-terminal';
 import pino from 'pino';
 import { t } from './i18n.ts';
 
-const logger = pino({ level: 'silent' });
 let sock: WASocket | undefined;
+const logger = pino({ level: 'silent' });
 
 export const connect = async (): Promise<WASocket> => {
   const { state, saveCreds } = await useMultiFileAuthState('auth');

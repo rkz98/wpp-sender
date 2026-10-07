@@ -8,10 +8,11 @@ import type { Sender } from './models/sender.ts';
 import schema from './schema.ts';
 
 const app = Fastify({ logger: true });
+
 const jobs = new Map<string, Job>();
-const log = pino({ base: null }, pino.destination(process.env.LOG_FILE ?? 'sends.log'));
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 const locale = (req: FastifyRequest) => req.headers['accept-language']?.split(',')[0];
+const log = pino({ base: null }, pino.destination(process.env.LOG_FILE ?? 'sends.log'));
 let queue = Promise.resolve(); // ponytail: one job at a time so delays stay honest; jobs die on restart
 
 export const run = async (job: Job, sock: Sender, lang?: string): Promise<void> => {
