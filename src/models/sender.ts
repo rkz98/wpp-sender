@@ -1,3 +1,3 @@
 import type { WASocket } from 'baileys';
 
-export type Sender = Pick<WASocket, 'onWhatsApp' | 'sendMessage'>;
+export type Sender = Pick<WASocket, 'user' | 'onWhatsApp' | 'sendMessage'>;

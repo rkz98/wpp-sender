@@ -1,0 +1,12 @@
+services:
+  wpp-sender:
+    build: .
+    env_file: .env
+    environment:
+      LOG_FILE: /app/logs/sends.log
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      - ./auth:/app/auth
+      - ./logs:/app/logs
+    restart: unless-stopped

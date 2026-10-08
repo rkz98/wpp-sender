@@ -36,6 +36,13 @@
   ],
   "item": [
     {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/health"
+      }
+    },
+    {
       "name": "Status",
       "request": {
         "method": "GET",
@@ -82,6 +89,13 @@
       "request": {
         "method": "GET",
         "url": "{{baseUrl}}/batch"
+      }
+    },
+    {
+      "name": "Cancel batch",
+      "request": {
+        "method": "DELETE",
+        "url": "{{baseUrl}}/batch/{{jobId}}"
       }
     }
   ]

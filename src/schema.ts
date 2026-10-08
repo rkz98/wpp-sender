@@ -4,12 +4,13 @@ const schema = {
     required: ['contacts', 'message'],
     properties: {
       message: { minLength: 1, type: 'string' },
+      callbackUrl: { format: 'uri', type: 'string' },
       delayMs: {
         minItems: 2,
         maxItems: 2,
         type: 'array',
         default: [15000, 30000],
-        items: { minimum: 0, type: 'integer' }
+        items: { minimum: 1000, type: 'integer' }
       },
       contacts: {
         minItems: 1,
@@ -18,7 +19,8 @@ const schema = {
         items: {
           type: 'object',
           required: ['number'],
-          properties: { name: { type: 'string' }, number: { minLength: 8, type: 'string' } }
+          additionalProperties: { type: 'string' },
+          properties: { number: { minLength: 8, type: 'string' } }
         }
       }
     }

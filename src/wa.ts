@@ -1,16 +1,17 @@
-import makeWASocket, { DisconnectReason, fetchLatestWaWebVersion, useMultiFileAuthState, type WASocket } from 'baileys';
+import makeWASocket, { DisconnectReason, useMultiFileAuthState, type WASocket } from 'baileys';
 import { rmSync } from 'node:fs';
+import { setTimeout as sleep } from 'node:timers/promises';
 import qrcode from 'qrcode-terminal';
 import pino from 'pino';
 import { t } from './i18n.ts';
 
+const RETRY_MS = 5000;
 let sock: WASocket;
 const logger = pino({ level: 'silent' });
 
 export const connect = async (): Promise<WASocket> => {
   const { state, saveCreds } = await useMultiFileAuthState('auth');
-  const { version } = await fetchLatestWaWebVersion();
-  sock = makeWASocket({ logger, version, auth: state, syncFullHistory: false });
+  sock = makeWASocket({ logger, auth: state, syncFullHistory: false });
   sock.ev.on('creds.update', saveCreds);
   sock.ev.on('connection.update', ({ qr, connection, lastDisconnect }) => {
     if (qr) {
@@ -25,10 +26,15 @@ export const connect = async (): Promise<WASocket> => {
         console.error(t('loggedOut'));
         rmSync('auth', { force: true, recursive: true });
       }
-      connect().catch(console.error);
+      sleep(RETRY_MS).then(connect).catch(console.error); // ponytail: retry forever; a dead socket is worse than noisy logs
     }
   });
   return sock;
+};
+
+export const close = (): void => {
+  sock?.ev.removeAllListeners('connection.update'); // otherwise the close event schedules a reconnect
+  sock?.end(undefined);
 };
 
 export const wa = (): WASocket => sock;

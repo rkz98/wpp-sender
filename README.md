@@ -22,14 +22,15 @@ The server queues the batch, sends one message at a time with a random human-lik
 ## Features
 
 - **One endpoint to send** — `POST /batch` with contacts, a message and an optional delay range.
-- **Per-contact templating** — `{name}` in the message is replaced by each contact's name.
+- **Per-contact templating** — `{name}`, `{city}`, any `{field}` of the contact is replaced in the message.
 - **Number validation** — every number is checked with WhatsApp before sending; invalid ones land in `failed`.
-- **Rate-limited by design** — messages go out sequentially with a random delay between them.
-- **Job status** — poll `GET /batch/:id` for `queued` / `running` / `done`, plus `sent` and `failed` lists.
+- **Rate-limited by design** — messages go out sequentially with a random delay between them. Duplicates are dropped.
+- **Job status** — poll `GET /batch/:id` or pass a `callbackUrl`. Cancel a running batch with `DELETE /batch/:id`.
+- **Survives disconnects** — a batch pauses while WhatsApp is down and resumes when it reconnects.
 - **Persistent session** — credentials are stored in `auth/`; restarts reconnect without a new QR code.
 - **Audit log** — one JSON line per contact in `sends.log`, ready for `jq` or your log shipper.
 - **i18n** — logs and error messages in `en` or `pt-BR`, overridable per request via `Accept-Language`.
-- **Zero build** — runs TypeScript directly on Node 24. Four runtime dependencies.
+- **Zero build** — runs TypeScript directly on Node 24. Four runtime dependencies. Docker image included.
 
 ## Quick start
 
@@ -65,35 +66,47 @@ Then check progress:
 curl localhost:3000/batch/6f1c… -H 'x-api-key: <your API_KEY>'
 ```
 
+### Docker
+
+```bash
+cp .env.example .env   # set API_KEY
+docker compose up      # the QR code is printed in the container output
+```
+
+`auth/` and `logs/` are bind-mounted next to `compose.yaml`, so the session and the audit log survive rebuilds.
+
 ### Postman
 
-Import [`postman_collection.json`](postman_collection.json) and set the `apiKey` collection variable.
-**Create batch** stores the returned id in `jobId`, so **Get batch** works right away.
+Import [`postman_collection.json`](postman_collection.json) and set the `apiKey` collection variable. **Create batch**
+stores the returned id in `jobId`, so **Get batch** works right away.
 
 ## API reference
 
-All routes require the `x-api-key` header. A missing or wrong key returns `401`.
+All routes except `/health` require the `x-api-key` header. A missing or wrong key returns `401`.
 
-| Method | Path         | Description                                  |
-|--------|--------------|----------------------------------------------|
-| `POST` | `/batch`     | Queue a batch. Returns `202` with the job id |
-| `GET`  | `/batch`     | List every job held in memory                |
-| `GET`  | `/batch/:id` | Get one job. `404` if unknown                |
-| `GET`  | `/status`    | WhatsApp connection state                    |
+| Method   | Path         | Description                                                    |
+|----------|--------------|----------------------------------------------------------------|
+| `POST`   | `/batch`     | Queue a batch. Returns `202` with the job id                   |
+| `GET`    | `/batch`     | List every job held in memory                                  |
+| `GET`    | `/batch/:id` | Get one job. `404` if unknown                                  |
+| `DELETE` | `/batch/:id` | Cancel a queued or running job. Returns the job                |
+| `GET`    | `/status`    | WhatsApp connection state                                      |
+| `GET`    | `/health`    | `{ "connected": bool }`, no auth. For Docker and uptime checks |
 
 ### `POST /batch`
 
 Request body:
 
-| Field      | Type                                  | Required | Notes                                                                |
-|------------|---------------------------------------|----------|----------------------------------------------------------------------|
-| `contacts` | `{ name?: string, number: string }[]` | yes      | 1–500 items. Any formatting is accepted; non-digits are stripped     |
-| `message`  | `string`                              | yes      | `{name}` is replaced per contact (empty string when `name` is absent) |
-| `delayMs`  | `[number, number]`                    | no       | Min/max delay between sends in ms. Default `[15000, 30000]`          |
+| Field         | Type                                    | Required | Notes                                                                          |
+|---------------|-----------------------------------------|----------|--------------------------------------------------------------------------------|
+| `contacts`    | `{ number: string, [field]: string }[]` | yes      | 1–500 items. Any formatting is accepted; non-digits are stripped. Deduplicated |
+| `message`     | `string`                                | yes      | `{field}` is replaced by the contact's field (empty string when absent)        |
+| `delayMs`     | `[number, number]`                      | no       | Min/max delay between sends in ms, each ≥ `1000`. Default `[15000, 30000]`     |
+| `callbackUrl` | `string`                                | no       | `POST`ed the final job JSON when the batch ends, is cancelled or fails         |
 
 Responses:
 
-- `202` — `{ "id": "<uuid>", "total": <contacts.length> }`. The batch runs in the background.
+- `202` — `{ "id": "<uuid>", "total": <contacts after dedupe> }`. The batch runs in the background.
 - `400` — body failed validation.
 - `503` — WhatsApp is not connected yet.
 
@@ -106,31 +119,53 @@ Batches run **one at a time, in submission order**. A second `POST` while one is
   "id": "6f1c…",
   "status": "running",
   "message": "Hello {name}!",
-  "delayMs": [15000, 30000],
-  "contacts": [ … ],
-  "sent":   [ { "name": "Ana", "number": "+55 11 99999-0001" } ],
-  "failed": [ { "number": "5511999990002", "error": "not on WhatsApp" } ]
+  "delayMs": [
+    15000,
+    30000
+  ],
+  "contacts": [
+    …
+  ],
+  "sent": [
+    {
+      "name": "Ana",
+      "number": "+55 11 99999-0001"
+    }
+  ],
+  "failed": [
+    {
+      "number": "5511999990002",
+      "error": "not on WhatsApp"
+    }
+  ]
 }
 ```
 
-`status` is one of `queued`, `running`, `done`.
+`status` is one of `queued`, `running`, `done`, `cancelled`. A `running` batch pauses while WhatsApp is disconnected
+and resumes automatically; `DELETE /batch/:id` stops it after the current contact.
 
 ### `GET /status`
 
 ```json
-{ "connected": true, "user": { "id": "5511999990000:12@s.whatsapp.net", "name": "…" } }
+{
+  "connected": true,
+  "user": {
+    "id": "5511999990000:12@s.whatsapp.net",
+    "name": "…"
+  }
+}
 ```
 
 ## Configuration
 
 Set via `.env` (loaded with Node's built-in `--env-file`) or the environment.
 
-| Variable   | Default     | Description                                                   |
-|------------|-------------|---------------------------------------------------------------|
-| `API_KEY`  | *required*  | Secret that clients must send in the `x-api-key` header       |
-| `PORT`     | `3000`      | HTTP port                                                     |
-| `LOCALE`   | `en`        | Language for console output and API errors. `en` or `pt-BR`   |
-| `LOG_FILE` | `sends.log` | Path of the per-contact audit log                             |
+| Variable   | Default     | Description                                                 |
+|------------|-------------|-------------------------------------------------------------|
+| `API_KEY`  | *required*  | Secret that clients must send in the `x-api-key` header     |
+| `PORT`     | `3000`      | HTTP port                                                   |
+| `LOCALE`   | `en`        | Language for console output and API errors. `en` or `pt-BR` |
+| `LOG_FILE` | `sends.log` | Path of the per-contact audit log                           |
 
 API error messages also honor the request's `Accept-Language` header, which takes precedence over `LOCALE`.
 
@@ -139,8 +174,22 @@ API error messages also honor the request's `Accept-Language` header, which take
 Every contact produces one JSON line in `LOG_FILE`:
 
 ```json
-{"level":30,"time":1760000000000,"job":"6f1c…","name":"Ana","number":"+55 11 99999-0001","msg":"sent"}
-{"level":40,"time":1760000003000,"job":"6f1c…","number":"5511999990002","error":"not on WhatsApp","msg":"failed"}
+{
+  "level": 30,
+  "time": 1760000000000,
+  "job": "6f1c…",
+  "name": "Ana",
+  "number": "+55 11 99999-0001",
+  "msg": "sent"
+}
+{
+  "level": 40,
+  "time": 1760000003000,
+  "job": "6f1c…",
+  "number": "5511999990002",
+  "error": "not on WhatsApp",
+  "msg": "failed"
+}
 ```
 
 ### Session
@@ -171,6 +220,7 @@ test.ts            # runnable assertions, no framework
 ## Limitations
 
 - **Jobs live in memory.** Restarting the server drops queued and running batches. The audit log survives.
+  Only the last 100 finished jobs are kept.
 - **Single WhatsApp account.** One server process equals one phone.
 - **Text only.** No media, buttons or groups yet.
 
@@ -187,6 +237,8 @@ Issues and pull requests are welcome. Before opening a PR, run:
 ```bash
 npm run lint && npm run typecheck && npm test
 ```
+
+CI runs the same three commands on every PR. Every push to `main` that passes bumps the patch version and tags it.
 
 ## License
 
