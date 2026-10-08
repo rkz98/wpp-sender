@@ -1,7 +1,7 @@
 {
   "type": "module",
   "license": "MIT",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "name": "wpp-sender",
   "description": "Self-hosted HTTP API for sending WhatsApp messages in batches, built on Baileys and Fastify",
   "engines": {
