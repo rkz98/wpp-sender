@@ -1,4 +1,6 @@
-<h1 align="center">wpp-sender</h1>
+<p align="center">
+  <img src=".github/logo.png" width="320" alt="wpp-sender">
+</p>
 
 <p align="center">
   Self-hosted HTTP API for sending WhatsApp messages in batches.<br>
