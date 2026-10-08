@@ -6,6 +6,7 @@ import pino from 'pino';
 import { t } from './i18n.ts';
 
 const RETRY_MS = 5000;
+
 let sock: WASocket;
 const logger = pino({ level: 'silent' });
 
