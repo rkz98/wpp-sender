@@ -34,8 +34,8 @@ export const connect = async (): Promise<WASocket> => {
 };
 
 export const close = (): void => {
-  sock?.ev.removeAllListeners('connection.update'); // otherwise the close event schedules a reconnect
-  sock?.end(undefined);
+  sock?.ev.removeAllListeners('connection.update'); // otherwise the close event schedules a reconnection
+  sock?.end(undefined).then();
 };
 
 export const wa = (): WASocket => sock;
