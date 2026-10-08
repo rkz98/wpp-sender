@@ -1,5 +1,5 @@
 <p align="center">
-  <img src=".github/logo.png" width="320" alt="wpp-sender">
+  <img src=".github/logo.png" width="480" alt="wpp-sender">
 </p>
 
 <p align="center">
