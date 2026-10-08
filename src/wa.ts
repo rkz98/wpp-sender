@@ -5,9 +5,8 @@ import qrcode from 'qrcode-terminal';
 import pino from 'pino';
 import { t } from './i18n.ts';
 
-const RETRY_MS = 5000;
-
 let sock: WASocket;
+const RETRY_MS = 5000;
 const logger = pino({ level: 'silent' });
 
 export const connect = async (): Promise<WASocket> => {
