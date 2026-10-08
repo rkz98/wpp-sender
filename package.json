@@ -1,7 +1,16 @@
 {
   "type": "module",
+  "license": "MIT",
   "version": "1.0.0",
   "name": "wpp-sender",
+  "description": "Self-hosted HTTP API for sending WhatsApp messages in batches, built on Baileys and Fastify",
+  "engines": {
+    "node": ">=24"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rkz98/wpp-sender.git"
+  },
   "scripts": {
     "lint": "eslint .",
     "typecheck": "tsc",
@@ -22,14 +31,5 @@
     "eslint-plugin-perfectionist": "^5.12.1",
     "typescript": "~5.8",
     "typescript-eslint": "^8.71.1"
-  },
-  "description": "Self-hosted HTTP API for sending WhatsApp messages in batches, built on Baileys and Fastify",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/rkz98/wpp-sender.git"
-  },
-  "engines": {
-    "node": ">=24"
   }
 }
