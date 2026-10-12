@@ -32,7 +32,7 @@ The server queues the batch, sends one message at a time with a random human-lik
 - **Persistent session** — credentials are stored in `auth/`; restarts reconnect without a new QR code.
 - **Audit log** — one JSON line per contact in `sends.log`, ready for `jq` or your log shipper.
 - **i18n** — logs and error messages in `en` or `pt-BR`, overridable per request via `Accept-Language`.
-- **Zero build** — runs TypeScript directly on Node 24. Four runtime dependencies. Docker image included.
+- **Zero build** — runs TypeScript directly on Node 24. Five runtime dependencies. Docker image included.
 
 ## Quick start
 

@@ -1,22 +1,21 @@
 import Fastify, { type FastifyRequest } from 'fastify';
 import { timingSafeEqual } from 'node:crypto';
 import { setTimeout as sleep } from 'node:timers/promises';
-import pino from 'pino';
 import { close, connect, wa } from './wa.ts';
 import { t } from './i18n.ts';
+import { log, stdout } from './log.ts';
 import type { Contact } from './models/contact.ts';
 import type { BatchBody, Job } from './models/batch.ts';
 import type { Sender } from './models/sender.ts';
 import schema from './schema.ts';
 
 const MAX_JOBS = 100;
-const app = Fastify({ logger: true });
+const app = Fastify({ logger: { stream: stdout } });
 
 const jobs = new Map<string, Job>();
 const digits = (n: string) => n.replace(/\D/g, '');
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 const locale = (req: FastifyRequest) => req.headers['accept-language']?.split(/[,;]/)[0];
-const log = pino({ base: null }, pino.destination(process.env.LOG_FILE ?? 'sends.log'));
 let queue = Promise.resolve(); // ponytail: one job at a time so delays stay honest; jobs die on restart
 
 const keyOk = (given: unknown): boolean => {
@@ -38,11 +37,16 @@ export const run = async (job: Job, sender: () => Sender | undefined, lang?: str
       if (!check?.exists) throw new Error(t('notOnWhatsApp', lang));
       await sock.sendMessage(check.jid, { text: job.message.replace(/\{(\w+)\}/g, (_, k: string) => contact[k] ?? '') });
       job.sent.push(contact);
-      log.info({ job: job.id, ...contact }, 'sent');
+      log.info({ job: job.id, ...contact, total: job.contacts.length, n: job.sent.length + job.failed.length }, 'sent');
     } catch (e) {
       const error = e instanceof Error ? e.message : String(e);
       job.failed.push({ ...contact, error });
-      log.warn({ job: job.id, ...contact, error }, 'failed');
+      log.warn({
+        job: job.id, ...contact,
+        error,
+        total: job.contacts.length,
+        n: job.sent.length + job.failed.length
+      }, 'failed');
     }
     await sleep(rand(job.delayMs[0], job.delayMs[1]));
   }
